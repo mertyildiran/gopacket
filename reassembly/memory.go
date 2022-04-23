@@ -8,6 +8,7 @@ package reassembly
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -86,14 +87,15 @@ func (c *pageCache) replace(p *page) {
 // Assembler, though, it does have to do some locking to make sure that the
 // connection objects it stores are accessible to multiple Assemblers.
 type StreamPool struct {
-	conns              map[key]*connection
-	users              int
-	mu                 sync.RWMutex
-	factory            StreamFactory
-	free               []*connection
-	all                [][]connection
-	nextAlloc          int
-	newConnectionCount int64
+	conns           map[key]*connection
+	users           int
+	mu              sync.RWMutex
+	factory         StreamFactory
+	free            []*connection
+	all             [][]connection
+	nextAlloc       int
+	connectionCount int64
+	connectionLimit int64
 }
 
 const initialAllocSize = 1024
@@ -121,22 +123,26 @@ func (p *StreamPool) Dump() {
 }
 
 func (p *StreamPool) remove(conn *connection) {
+	fmt.Printf("called remove connection\n")
 	p.mu.Lock()
 	if _, ok := p.conns[conn.key]; ok {
 		delete(p.conns, conn.key)
 		p.free = append(p.free, conn)
 	}
+	p.connectionCount--
 	p.mu.Unlock()
 }
 
 // NewStreamPool creates a new connection pool.  Streams will
 // be created as necessary using the passed-in StreamFactory.
 func NewStreamPool(factory StreamFactory) *StreamPool {
+	fmt.Printf("called NewStreamPool!\n")
 	return &StreamPool{
-		conns:     make(map[key]*connection, initialAllocSize),
-		free:      make([]*connection, 0, initialAllocSize),
-		factory:   factory,
-		nextAlloc: initialAllocSize,
+		conns:           make(map[key]*connection, initialAllocSize),
+		free:            make([]*connection, 0, initialAllocSize),
+		factory:         factory,
+		nextAlloc:       initialAllocSize,
+		connectionLimit: 100,
 	}
 }
 
@@ -151,12 +157,12 @@ func (p *StreamPool) connections() []*connection {
 }
 
 func (p *StreamPool) newConnection(k key, s Stream, ts time.Time) (c *connection, h *halfconnection, r *halfconnection) {
-	if *memLog {
-		p.newConnectionCount++
-		if p.newConnectionCount&0x7FFF == 0 {
-			log.Println("StreamPool:", p.newConnectionCount, "requests,", len(p.conns), "used,", len(p.free), "free")
-		}
+	fmt.Printf("called newConnection\n")
+	if p.connectionCount > p.connectionLimit {
+		fmt.Printf(">>>>> LIMIT IS REACHED <<<<<\n")
+		return
 	}
+	p.connectionCount++
 	if len(p.free) == 0 {
 		p.grow()
 	}
@@ -201,6 +207,8 @@ func (p *StreamPool) getConnection(k key, end bool, ts time.Time, tcp *layers.TC
 		// FIXME: delete s ?
 		return conn2, half2, rev2
 	}
-	p.conns[k] = conn
+	if conn != nil {
+		p.conns[k] = conn
+	}
 	return conn, half, rev
 }

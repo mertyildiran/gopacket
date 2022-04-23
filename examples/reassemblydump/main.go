@@ -85,8 +85,8 @@ var stats struct {
 	overlapPackets      int
 }
 
-const closeTimeout time.Duration = time.Hour * 24 // Closing inactive: TODO: from CLI
-const timeout time.Duration = time.Minute * 5     // Pending bytes: TODO: from CLI
+const closeTimeout time.Duration = time.Second * 30 // Closing inactive: TODO: from CLI
+const timeout time.Duration = time.Second * 30      // Pending bytes: TODO: from CLI
 
 /*
  * HTTP part

@@ -390,6 +390,7 @@ func pcapOpenDead(linkType layers.LinkType, captureLength int) (*Handle, error) 
 }
 
 func (p *Handle) pcapNextPacketEx() NextError {
+	// fmt.Printf("called pcapNextPacketEx\n")
 	// This horrible magic allows us to pass a ptr-to-ptr to pcap_next_ex
 	// without causing that ptr-to-ptr to itself be allocated on the heap.
 	// Since Handle itself survives through the duration of the pcap_next_ex
@@ -554,7 +555,7 @@ func (p *InactiveHandle) pcapGeterr() error {
 }
 
 func (p *InactiveHandle) pcapActivate() (*Handle, activateError) {
-	ret := activateError(C.pcap_activate(p.cptr))
+	ret := activateError(C.pcap_activate(p.cptr)) // Calling C
 	if ret != aeNoError {
 		return nil, ret
 	}

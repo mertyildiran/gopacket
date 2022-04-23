@@ -798,7 +798,9 @@ func NewPacketSource(source PacketDataSource, decoder Decoder) *PacketSource {
 // NextPacket returns the next decoded packet from the PacketSource.  On error,
 // it returns a nil packet and a non-nil error.
 func (p *PacketSource) NextPacket() (Packet, error) {
+	// fmt.Printf("called NextPacket\n")
 	data, ci, err := p.source.ReadPacketData()
+	// fmt.Printf("data: %v\n", string(data))
 	if err != nil {
 		return nil, err
 	}

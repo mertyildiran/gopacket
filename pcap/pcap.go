@@ -248,6 +248,7 @@ const (
 // code associated with that packet.  If the packet is read successfully, the
 // returned error is nil.
 func (p *Handle) ReadPacketData() (data []byte, ci gopacket.CaptureInfo, err error) {
+	// fmt.Printf("called ReadPacketData\n")
 	p.mu.Lock()
 	err = p.getNextBufPtrLocked(&ci)
 	if err == nil {
